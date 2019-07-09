@@ -27,12 +27,7 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         //console.log("Socket is on");
         var db = client.db('myChatApp');
         chat = db.collection('chats');
-
-
-        //create function to send status
-        //sendStatus =function(s){
-        //    socket.emit('status',s);
-        //}
+        user=db.collection('users');
 
         //get all chats from database
         chat.find().limit(100).sort({_id:1}).toArray(function(err,res){
@@ -42,27 +37,54 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
 
         //Handle input events
         socket.on('input',function(data){
-            let message=data.message;
             
-            //Check for name and messages
-            if(message==''){
-                //sendStatus('Enter a message');
-            } else{
-                //Insert in database
-                var data={message:message};
-                chat.insert(data,function(){
+            /*let status=data.status;
+
+            if(status=='1'){
+                user.insert(data,function(){
+                    var name=data.name;
+                    var username=data.username;
+                    var email=data.email;
+                    var number=data.number;
+                    var password=data.password;
+
+                    var data={register:'Done'};
                     io.emit('output',[data]);
-                    console.log([data]);
-                    //Send status object
-                    //sendStatus({
-                    //    message:'Message Sent',
-                    //    clear:true
-                    //});
+                
                 });
-            }
+            }else if(status=='2'){*/
+                let message=data.message;
+                //Check for name and messages
+                if(message==''){
+                    //sendStatus('Enter a message');
+                } else{
+                    //Insert in database
+                    var data={message:message};
+                    chat.insert(data,function(){
+                        io.emit('output',[data]);
+                    });
+                }
+            //}
 
         });
 
 
+        socket.on('register',function(data){
+            //console.log('Hii');
+            //var data={};
+            user.insert(data,function(){
+                var data={reg:'Done'};
+                console.log(data.reg);
+                socket.emit('done',[data]);
+            });
+        });
+
+        socket.on('end', function (){
+            io.close();
+        });
+        /*socket.on('disconnect', function () {
+            socket.disconnect();
+            console.log('user disconnected');
+        });*/
     });
 });
