@@ -38,40 +38,21 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         //Handle input events
         socket.on('input',function(data){
             
-            /*let status=data.status;
-
-            if(status=='1'){
-                user.insert(data,function(){
-                    var name=data.name;
-                    var username=data.username;
-                    var email=data.email;
-                    var number=data.number;
-                    var password=data.password;
-
-                    var data={register:'Done'};
+            let message=data.message;
+            //Check for name and messages
+            if(message==''){
+                //sendStatus('Enter a message');
+            } else{
+                //Insert in database
+                var data={message:message};
+                chat.insert(data,function(){
                     io.emit('output',[data]);
-                
                 });
-            }else if(status=='2'){*/
-                let message=data.message;
-                //Check for name and messages
-                if(message==''){
-                    //sendStatus('Enter a message');
-                } else{
-                    //Insert in database
-                    var data={message:message};
-                    chat.insert(data,function(){
-                        io.emit('output',[data]);
-                    });
-                }
-            //}
-
+            }
         });
 
 
         socket.on('register',function(data){
-            //console.log('Hii');
-            //var data={};
             user.insert(data,function(){
                 var data={reg:'Done'};
                 console.log(data.reg);
@@ -82,9 +63,22 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         socket.on('end', function (){
             io.close();
         });
-        /*socket.on('disconnect', function () {
-            socket.disconnect();
-            console.log('user disconnected');
-        });*/
+        
+
+        //Login
+        socket.on('login',function(data){
+            //console.log(data);
+            user.find(data).toArray(function(err,res){
+                if(err) {
+                    socket.emit('loggedin',err);
+                    //console.log(err);
+                    //throw err;
+                }else{
+                    //console.log(res);
+                    socket.emit('loggedin',res);
+                }
+
+            });
+        });
     });
 });
