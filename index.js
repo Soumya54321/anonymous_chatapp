@@ -55,7 +55,7 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         socket.on('register',function(data){
             user.insert(data,function(){
                 var data={reg:'Done'};
-                console.log(data.reg);
+                //console.log(data.reg);
                 socket.emit('done',[data]);
             });
         });
