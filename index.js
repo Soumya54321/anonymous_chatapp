@@ -28,29 +28,8 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         var db = client.db('myChatApp');
         chat = db.collection('chats');
         user=db.collection('users');
-
-        //get all chats from database
-        chat.find().limit(100).sort({_id:1}).toArray(function(err,res){
-            if(err) throw err;
-            socket.emit('output',res);
-        });
-
-        //Handle input events
-        socket.on('input',function(data){
-            
-            let message=data.message;
-            //Check for name and messages
-            if(message==''){
-                //sendStatus('Enter a message');
-            } else{
-                //Insert in database
-                var data={message:message};
-                chat.insert(data,function(){
-                    io.emit('output',[data]);
-                });
-            }
-        });
-
+        online_users=db.collection('online_users');
+        
 
         socket.on('register',function(data){
             user.insert(data,function(){
@@ -59,11 +38,6 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
                 socket.emit('done',[data]);
             });
         });
-
-        socket.on('end', function (){
-            io.close();
-        });
-        
 
         //Login
         socket.on('login',function(data){
@@ -80,5 +54,31 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
 
             });
         });
+
+        //get all chats from database
+        chat.find().limit(100).sort({_id:1}).toArray(function(err,res){
+            if(err) throw err;
+            socket.emit('output',res);
+        });
+
+        //Handle input events
+        socket.on('input',function(data){
+            let message=data.message;
+            //Check for name and messages
+            if(message==''){
+                //sendStatus('Enter a message');
+            } else{
+                //Insert in database
+                var data={message:message};
+                chat.insert(data,function(){
+                    io.emit('output',[data]);
+                });
+            }
+        });
+
+        socket.on('end', function (){
+            io.close();
+        });
+
     });
 });
