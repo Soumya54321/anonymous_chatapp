@@ -1,13 +1,6 @@
 const express = require('express');
-const path=require('path');
-const bodyParser=require('body-parser');
 const cors=require('cors');
-const passport=require('passport')
-const mongoose=require('mongoose');
 const app = express();
-
-const port=3000;
-const http=require('http');
 
 const mongo = require('mongodb').MongoClient;
 const io = require('socket.io').listen(3000).sockets;
@@ -28,8 +21,10 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         var db = client.db('myChatApp');
         chat = db.collection('chats');
         user=db.collection('users');
+        loggedin_user=db.collection('loggedin_users');
         online_users=db.collection('online_users');
-        
+        pairs=db.collection('pairs');
+        waiting=db.collection('waiting');
 
         socket.on('register',function(data){
             user.insert(data,function(){
@@ -49,10 +44,83 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
                     //throw err;
                 }else{
                     //console.log(res);
+                    var count=0;
+                    online_users.count().then(function(result){
+                        this.count=result;
+                    });
+                    loggedin_user.insert(data);
+                    online_users.insert(data,function(){
+                       this.count=count+1;
+                        //console.log(count);
+                        data={online_count:this.count};
+                        //console.log(data);
+                        socket.emit('online',[data]);
+                    });
                     socket.emit('loggedin',res);
                 }
-
             });
+        });
+
+        socket.on('chat_id_req',function(data){
+            loggedin_user.find().limit(100).toArray(function(err,res){
+                if(err) throw err;
+                var user;
+                for(i=0;i<=res.length;i++){
+                    if(data.username==res[i].username){
+                        res.splice(i,1);
+                        //console.log(user);
+                        break;
+                    }
+                }
+                waiting.insert(data);
+                var intid=setInterval(function(user){
+                    waiting.find().limit(100).toArray(function(err,res){
+                        if(err) throw err;
+                        
+                        if(res.length>1){
+                            for(i=0;i<res.length;i++){
+                                if(data.username==res[i].username){
+                                    res.splice(i,1);
+                                    break;
+                                }
+                            }
+                            //console.log(res);
+                            var friend = res[Math.floor(Math.random() * res.length)];
+                            //console.log(friend.socket_id);
+                            console.log(data.socket_id);
+                            number=Math.floor((Math.random()*5000000000000+6)+Math.random()*19849463464194946+1);
+                            data1={pair_id:number};
+                            io.to(friend.socket_id).emit('pair_id',[data1]);
+                            io.to(data.socket_id).emit('pair_id',[data1]);
+                            clearInterval(intid);    
+                        }
+                        else{
+                            data2={status:0};
+                            socket.emit('no_one',[data2]);
+                        }
+                    });
+                },50);
+
+                var count2=res.length;
+
+                
+
+                //user=online_users.find(user);
+                //friend=online_users.find(friend);
+
+                
+                //pair_id=user._id;
+                //number=Math.floor((Math.random()*5000000000000+6)+Math.random()*19849463464194946+1);
+                //db.collection('pairs').insert({pair:number, user1:user.username, user2:friend.username});
+                //db.collection('waiting').insert(friend);
+                
+                //socket.emit('chat_id_res',[data]);
+            });
+        });
+
+        socket.on('logout',function(data){
+            loggedin_user.remove(data);
+            online_users.remove(data);
         });
 
         //get all chats from database
