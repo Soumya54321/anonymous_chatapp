@@ -60,7 +60,8 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
                 }
             });
         });
-
+        
+        //Setting chat id 
         socket.on('chat_id_req',function(data){
             loggedin_user.find().limit(100).toArray(function(err,res){
                 if(err) throw err;
@@ -87,34 +88,22 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
                             //console.log(res);
                             var friend = res[Math.floor(Math.random() * res.length)];
                             //console.log(friend.socket_id);
-                            console.log(data.socket_id);
+                            //console.log(data.socket_id);
                             number=Math.floor((Math.random()*5000000000000+6)+Math.random()*19849463464194946+1);
-                            data1={pair_id:number};
-                            io.to(friend.socket_id).emit('pair_id',[data1]);
+                            data1={pair_id:number,online:res.length,friend:friend.socket_id};
+                            data2={pair_id:number,online:res.length,friend:data.socket_id};
+                            io.to(friend.socket_id).emit('pair_id',[data2]);
                             io.to(data.socket_id).emit('pair_id',[data1]);
                             clearInterval(intid);    
+                            waiting.remove(data);
+                            waiting.remove(friend);
                         }
                         else{
                             data2={status:0};
                             socket.emit('no_one',[data2]);
                         }
                     });
-                },50);
-
-                var count2=res.length;
-
-                
-
-                //user=online_users.find(user);
-                //friend=online_users.find(friend);
-
-                
-                //pair_id=user._id;
-                //number=Math.floor((Math.random()*5000000000000+6)+Math.random()*19849463464194946+1);
-                //db.collection('pairs').insert({pair:number, user1:user.username, user2:friend.username});
-                //db.collection('waiting').insert(friend);
-                
-                //socket.emit('chat_id_res',[data]);
+                },500);
             });
         });
 
@@ -124,22 +113,26 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         });
 
         //get all chats from database
-        chat.find().limit(100).sort({_id:1}).toArray(function(err,res){
+        /*chat.find().limit(100).sort({_id:1}).toArray(function(err,res){
             if(err) throw err;
             socket.emit('output',res);
-        });
+        });*/
 
         //Handle input events
-        socket.on('input',function(data){
+        socket.on('input_chat',function(data){
             let message=data.message;
+            let sender=data.sender;
+            let reciever=data.reciever;
+            let pair_id=data.pair_id;
             //Check for name and messages
             if(message==''){
                 //sendStatus('Enter a message');
             } else{
                 //Insert in database
-                var data={message:message};
+                //var data={message:message,sender:sender,pair:pair_id};
                 chat.insert(data,function(){
-                    io.emit('output',[data]);
+                    io.to(sender).emit('output',[data]);
+                    io.to(reciever).emit('output',[data]);
                 });
             }
         });
