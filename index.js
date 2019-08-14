@@ -94,7 +94,10 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
                             data2={pair_id:number,online:res.length,friend:data.socket_id};
                             io.to(friend.socket_id).emit('pair_id',[data2]);
                             io.to(data.socket_id).emit('pair_id',[data1]);
+
+                            data3={pair_id:number,user1:friend.socket_id,user2:data.socket_id};
                             clearInterval(intid);    
+                            pairs.insert(data3);
                             waiting.remove(data);
                             waiting.remove(friend);
                         }
