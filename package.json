@@ -18,7 +18,9 @@
     "passport": "*",
     "passport-jwt": "*",
     "socket.io": "^2.2.0",
-    "socket.io-client": "^2.2.0"
+    "socket.io-client": "^2.2.0",
+    "express-handlebars": "*",
+    "messagebird": "*"
   },
   "author": "",
   "license": "ISC"

@@ -1,4 +1,6 @@
 const express = require('express');
+const exphbs=require('express-handlebars');
+const bodyperser=require('body-parser');
 const cors=require('cors');
 const app = express();
 
@@ -27,12 +29,18 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         waiting=db.collection('waiting');
 
         socket.on('register',function(data){
-            user.insert(data,function(){
-                var data={reg:'Done'};
-                //console.log(data.reg);
-                socket.emit('done',[data]);
+            user.find(data.number).toArray(function(err,res){
+                if(!res[0]){
+                    user.insert(data,function(){
+                        var data={reg:'Done'};
+                        //console.log(data.reg);
+                        socket.emit('done',[data]);
+                    });
+                }else{
+                    socket.emit('same_user',[data]);
+                }
             });
-        });
+        }); 
 
         //Login
         socket.on('login',function(data){
@@ -65,11 +73,9 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         socket.on('chat_id_req',function(data){
             loggedin_user.find().limit(100).toArray(function(err,res){
                 if(err) throw err;
-                var user;
                 for(i=0;i<=res.length;i++){
                     if(data.username==res[i].username){
                         res.splice(i,1);
-                        //console.log(user);
                         break;
                     }
                 }
