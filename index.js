@@ -7,6 +7,35 @@ const app = express();
 const mongo = require('mongodb').MongoClient;
 const io = require('socket.io').listen(3000).sockets;
 
+const Nexmo = require('nexmo');
+
+const nexmo = new Nexmo({
+  apiKey: 'e306b438',
+  apiSecret: 'ePdmS3tfZU5OnPJY',
+});
+
+var firebase = require("firebase/app");
+
+// Add the Firebase products that you want to use
+require("firebase/auth");
+require("firebase/firestore");
+
+//src="https://www.gstatic.com/firebasejs/6.4.1/firebase-app.js";
+
+/*var firebaseConfig = {
+    apiKey: "AIzaSyAhUE_0oW9AxGo83YzQbEuNcNMC_mw9WtA",
+    authDomain: "mychatapp-2e817.firebaseapp.com",
+    databaseURL: "https://mychatapp-2e817.firebaseio.com",
+    projectId: "mychatapp-2e817",
+    storageBucket: "",
+    messagingSenderId: "975276390613",
+    appId: "1:975276390613:web:21596e68ad7c8c89"
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);*/
+
+
+
 app.use(cors());
 app.use(function(req, res, next) {
     res.render('index');
@@ -29,18 +58,61 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         waiting=db.collection('waiting');
 
         socket.on('register',function(data){
-            user.find(data.number).toArray(function(err,res){
+            num=data.number;
+            num='+91'+num;
+            console.log(num);
+            user.find({num}).toArray(function(err,res){
+                console.log(res);
                 if(!res[0]){
-                    user.insert(data,function(){
-                        var data={reg:'Done'};
+                    nexmo.verify.request({
+                        number: num,
+                        brand: 'Quoke',
+                        code_length: '6',
+                      }, (err, result) => {
+                        if (err) throw err;
+                        data={req_id:result.request_id};
+
+                        socket.emit('otp_sent',data);
+                        console.log(data);
+                      });
+
+
+                    //console.log("Done");
+                    //user.insert(data,function(){
+                    //    var data={reg:'Done'};
                         //console.log(data.reg);
-                        socket.emit('done',[data]);
-                    });
+                    //    socket.emit('done',[data]);
+                    //});
                 }else{
                     socket.emit('same_user',[data]);
                 }
             });
         }); 
+
+        socket.on('otp_verification',function(data){
+            code=data.otp;
+            
+            nexmo.verify.check({
+                request_id: data.req_id,
+                code: code
+            }, (err, result) => {
+                if (err) throw err;
+                else{
+                    data={
+                        name:data.name,
+                        username:data.username,
+                        number:data.number,
+                        password:data.password
+                    }
+                    console.log(result);
+                    user.insert(data,function(){
+                        var data={reg:'Done'};
+                        console.log(data.reg);
+                        socket.emit('done',[data]);
+                    });
+                }
+            });
+        });
 
         //Login
         socket.on('login',function(data){

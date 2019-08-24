@@ -11,16 +11,20 @@
     "bcryptjs": "*",
     "body-parser": "*",
     "cors": "*",
+    "dotenv": "^8.1.0",
     "express": "*",
+    "express-handlebars": "*",
+    "firebase": "^6.4.1",
     "jsonwebtoken": "*",
+    "messagebird": "*",
     "mongodb": "^3.2.7",
     "mongoose": "*",
+    "nexmo": "^2.4.1",
     "passport": "*",
     "passport-jwt": "*",
+    "sendotp": "^1.2.9",
     "socket.io": "^2.2.0",
-    "socket.io-client": "^2.2.0",
-    "express-handlebars": "*",
-    "messagebird": "*"
+    "socket.io-client": "^2.2.0"
   },
   "author": "",
   "license": "ISC"
