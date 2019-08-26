@@ -14,26 +14,59 @@ const nexmo = new Nexmo({
   apiSecret: 'ePdmS3tfZU5OnPJY',
 });
 
-var firebase = require("firebase/app");
+var google = require("googleapis");
+const googleConfig = {
+    clientId: '539711683053-7c4fl9d7a4eak3ep9aj50oajsau9da9k.apps.googleusercontent.com', // e.g. asdfghjkljhgfdsghjk.apps.googleusercontent.com
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET, // e.g. _ASDFA%DFASDFASDFASD#FAD-
+    redirect: process.env.GOOGLE_REDIRECT_URL, // this must match your google api settings
+};
 
-// Add the Firebase products that you want to use
-require("firebase/auth");
-require("firebase/firestore");
+const defaultScope = [
+    'https://www.googleapis.com/auth/plus.me',
+    'https://www.googleapis.com/auth/userinfo.email',
+];
 
-//src="https://www.gstatic.com/firebasejs/6.4.1/firebase-app.js";
+function createConnection() {
+    return new google.auth.OAuth2(
+      googleConfig.clientId,
+      googleConfig.clientSecret,
+      googleConfig.redirect
+    );
+}
 
-/*var firebaseConfig = {
-    apiKey: "AIzaSyAhUE_0oW9AxGo83YzQbEuNcNMC_mw9WtA",
-    authDomain: "mychatapp-2e817.firebaseapp.com",
-    databaseURL: "https://mychatapp-2e817.firebaseio.com",
-    projectId: "mychatapp-2e817",
-    storageBucket: "",
-    messagingSenderId: "975276390613",
-    appId: "1:975276390613:web:21596e68ad7c8c89"
-  };
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);*/
+function getConnectionUrl(auth) {
+    return auth.generateAuthUrl({
+      access_type: 'offline',
+      prompt: 'consent',
+      scope: defaultScope
+    });
+}
 
+function getGooglePlusApi(auth) {
+    return google.plus({ version: 'v1', auth });
+}
+
+function urlGoogle() {
+    const auth = createConnection();
+    const url = getConnectionUrl(auth);
+    return url;
+}
+
+function getGoogleAccountFromCode(code) {
+    const data = await auth.getToken(code);
+    const tokens = data.tokens;
+    const auth = createConnection();
+    auth.setCredentials(tokens);
+    const plus = getGooglePlusApi(auth);
+    const me = await plus.people.get({ userId: 'me' });
+    const userGoogleId = me.data.id;
+    const userGoogleEmail = me.data.emails && me.data.emails.length && me.data.emails[0].value;
+    return {
+      id: userGoogleId,
+      email: userGoogleEmail,
+      tokens: tokens,
+    };
+}
 
 
 app.use(cors());
@@ -58,10 +91,10 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
         waiting=db.collection('waiting');
 
         socket.on('register',function(data){
-            num=data.number;
+            var num=data.number;
             num='+91'+num;
             console.log(num);
-            user.find({num}).toArray(function(err,res){
+            user.find({number:data.number}).toArray(function(err,res){
                 console.log(res);
                 if(!res[0]){
                     nexmo.verify.request({
@@ -75,7 +108,6 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
                         socket.emit('otp_sent',data);
                         console.log(data);
                       });
-
 
                     //console.log("Done");
                     //user.insert(data,function(){
@@ -112,6 +144,20 @@ mongo.connect('mongodb://localhost:27017/myChatApp',function(err,client){
                     });
                 }
             });
+        });
+
+        socket.on('registration_cancel',function(data){
+            console.log(data.req_id);
+            nexmo.verify.control({
+                request_id: data.req_id,
+                cmd: 'cancel'
+            }, (err, result) => {
+                console.log(err ? err : result)
+            });
+        });
+
+        socket.on('google_regstration',function(){
+
         });
 
         //Login
