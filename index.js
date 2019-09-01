@@ -52,7 +52,7 @@ function urlGoogle() {
     return url;
 }
 
-function getGoogleAccountFromCode(code) {
+/*function getGoogleAccountFromCode(code) {
     const data = await auth.getToken(code);
     const tokens = data.tokens;
     const auth = createConnection();
@@ -66,7 +66,7 @@ function getGoogleAccountFromCode(code) {
       email: userGoogleEmail,
       tokens: tokens,
     };
-}
+}*/
 
 
 app.use(cors());
